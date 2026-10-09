@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Gaze Grid — Tobii ET5</title>
+  </head>
+  <body>
+    <header id="bar">
+      <strong class="brand">Gaze Grid</strong>
+      <button id="connect" class="primary" type="button">Connect tracker</button>
+      <span id="status" class="pill">Mouse simulation</span>
+      <span id="last" class="last">Nothing selected</span>
+      <span class="spacer"></span>
+      <label class="ctl">Dwell
+        <input id="dwell" type="range" min="300" max="2500" step="50" />
+        <output id="dwell-val"></output>
+      </label>
+      <label class="ctl"><input id="show-gaze" type="checkbox" checked /> Gaze dot</label>
+      <button id="clear" type="button">Clear</button>
+      <label class="ctl">Points
+        <select id="cal-pts">
+          <option value="5">5</option>
+          <option value="9" selected>9</option>
+          <option value="16">16</option>
+        </select>
+      </label>
+      <button id="display" type="button">Display…</button>
+      <button id="calibrate" class="cal" type="button" disabled>Calibrate</button>
+      <button id="fullscreen" type="button">Fullscreen</button>
+    </header>
+    <div id="msg" role="alert" hidden></div>
+    <main id="grid" aria-label="Selection grid"></main>
+    <div id="gaze-dot"></div>
+
+    <div id="cal-overlay">
+      <div id="onboard-cal-dot"><div class="ocd-ring"></div><div class="ocd-core"></div></div>
+      <div id="cal-status">Starting…</div>
+    </div>
+    <dialog id="area-dlg">
+      <h2>Display area</h2>
+      <p class="hint">
+        Browsers cannot read the physical screen size, so enter it here (tobii.json format).
+        <code>cx</code>/<code>cy</code> = tracker position relative to the screen centre in mm
+        (x right, y up); anchors like <code>"b - 10"</code> (10 mm below the bottom edge) work too.
+        Measure the visible panel width with a ruler for best accuracy.
+      </p>
+      <div class="row">
+        <label class="ctl">Diagonal <input id="diag" type="number" min="5" max="120" step="0.1" value="24" /> in</label>
+        <button id="fill-diag" type="button">Fill size from diagonal</button>
+        <span id="screen-info" class="hint"></span>
+      </div>
+      <textarea id="area-json" rows="11" spellcheck="false"></textarea>
+      <div id="area-info" class="hint"></div>
+      <div class="row">
+        <button id="area-load" type="button">Load file…</button>
+        <input id="area-file" type="file" accept=".json,application/json" hidden />
+        <button id="area-save" type="button">Download</button>
+        <button id="area-device" type="button">Read from device</button>
+        <span class="spacer"></span>
+        <button id="area-clear" type="button" title="Forget the saved area; keep whatever the device has">Clear saved</button>
+        <button id="area-close" type="button">Close</button>
+        <button id="area-apply" class="primary" type="button">Apply</button>
+      </div>
+    </dialog>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

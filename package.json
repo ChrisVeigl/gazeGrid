@@ -1,0 +1,18 @@
+{
+  "name": "gaze-grid",
+  "version": "0.1.0",
+  "description": "5x4 dwell-select grid driven by a Tobii ET5 via tobiifree (WebUSB + wasm)",
+  "type": "module",
+  "private": true,
+  "license": "GPL-3.0",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "@types/w3c-web-usb": "^1.0.10",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.10"
+  }
+}
