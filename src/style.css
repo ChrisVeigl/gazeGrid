@@ -76,7 +76,8 @@ dialog textarea {
   box-shadow:
     0 0 calc(34px * var(--glow)) calc(2px * var(--glow)) rgb(var(--ac) / calc(0.55 * var(--glow))),
     0 0 0 calc(2px * var(--glow)) rgb(var(--ac) / calc(0.85 * var(--glow)));
-  transition: background-color .35s ease, border-color .35s ease, color .35s ease;
+  transition: background-color .35s ease, border-color .35s ease, color .35s ease,
+    opacity .35s ease, filter .35s ease;
   will-change: transform;
 }
 .cell::before {              /* soft inner light, fades with the glow */
@@ -97,6 +98,17 @@ dialog textarea {
 .cell.selected { --ac: 62 207 142; background: #163a2d; border-color: rgb(var(--ac) / .7); }
 .cell.selected .check { opacity: 1; transform: scale(1); }
 .cell.gaze-hover { z-index: 1; }
+.cell.inactive { opacity: .28; filter: grayscale(.7); }
+
+/* start/stop control: red + stop icon while running, green + play icon while paused */
+.cell.control { flex-direction: column; gap: .2em; font-size: clamp(14px, 2.4vmin, 28px); }
+.cell.control .ico { position: relative; width: clamp(44px, 11vmin, 110px); height: auto; color: rgb(var(--ac)); }
+.cell.control .cap {
+  position: relative; font-size: .62em; font-weight: 700; letter-spacing: .14em;
+  text-transform: uppercase; color: rgb(var(--ac));
+}
+.cell.control.running { --ac: 255 94 98; background: #2b1a20; border-color: rgb(var(--ac) / .65); }
+.cell.control.paused  { --ac: 62 207 142; background: #12332a; border-color: rgb(var(--ac) / .85); }
 .cell.pulse::after { animation: ripple .65s cubic-bezier(.2,.7,.3,1); }
 @keyframes ripple {
   from { inset: -2px;  opacity: .85; }

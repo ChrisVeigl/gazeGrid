@@ -23,7 +23,8 @@ program that holds the tracker.
 4. **Calibrate** – on-device calibration with 5 / 9 / 16 points. Look at each dot, then click or press
    Space/Enter. Esc cancels. The calibration blob is stored in localStorage and re-applied on connect.
 5. Look at a cell: it grows slightly and glows more and more while you dwell; at the end a ripple plays and it is toggled (selected / deselected).
-   Look away and back to trigger it again. **Clear** resets all cells. The dwell slider sets 300-2500 ms.
+   Look away and back to trigger it again.
+   **Cell 1 is a pause/resume control** (red stop icon while running, green play icon while paused). While paused, gaze selection is bypassed: the other cells are dimmed and disabled, and only cell 1 reacts, so you can resume by looking at it. **Clear** resets all cells. The dwell slider sets 300-2500 ms.
 
 Without a tracker the mouse pointer simulates gaze, so you can try the dwell logic first.
 

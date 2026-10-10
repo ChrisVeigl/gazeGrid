@@ -44,6 +44,7 @@ export class DwellSelector {
   private fired = false;
   private glow: number[];
   private lastT = 0;
+  private only: number | null = null;   // when set, only this cell can be targeted
 
   constructor(
     private readonly cells: HTMLElement[],
@@ -67,17 +68,27 @@ export class DwellSelector {
 
   get current(): number { return this.cur; }
 
+  /** Restrict targeting to a single cell (null = all cells active). */
+  setOnly(index: number | null): void {
+    this.only = index;
+    if (index !== null && this.cur >= 0 && this.cur !== index) this.setCurrent(-1, 0);
+  }
+
+  private allowed(i: number): boolean {
+    return this.only === null || this.only === i;
+  }
+
   update(p: Pt | null, now: number): void {
     let hit = -1;
     if (p) {
       // 1. clearly inside some cell -> that cell
-      hit = this.rects.findIndex((r) => inside(r, p, -this.cfg.insetPx));
+      hit = this.rects.findIndex((r, i) => this.allowed(i) && inside(r, p, -this.cfg.insetPx));
       // 2. else keep the current cell while we are still near it
       if (hit < 0 && this.cur >= 0 && inside(this.rects[this.cur]!, p, this.cfg.stickyPx)) {
         hit = this.cur;
       }
       // 3. else any cell the point touches at all
-      if (hit < 0) hit = this.rects.findIndex((r) => inside(r, p));
+      if (hit < 0) hit = this.rects.findIndex((r, i) => this.allowed(i) && inside(r, p));
     }
 
     if (hit >= 0) {

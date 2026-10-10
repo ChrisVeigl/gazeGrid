@@ -15,6 +15,7 @@ const COLS = 5;
 const ROWS = 4;
 const STALE_MS = 250;     // tracker silent this long -> treat gaze as lost
 const SACCADE_PX = 150;   // bigger jumps bypass smoothing so the dot isn't laggy
+const CONTROL = 0;         // index of the start/stop cell (first cell)
 const KEY_DWELL = 'gazegrid_dwell_ms';
 const KEY_AREA_TEXT = 'gazegrid_display_area';
 
@@ -53,13 +54,49 @@ for (let i = 0; i < COLS * ROWS; i++) {
   const b = document.createElement('button');
   b.type = 'button';
   b.className = 'cell';
-  b.setAttribute('aria-pressed', 'false');
-  b.innerHTML = `<span class="label">${i + 1}</span><span class="check" aria-hidden="true">✓</span>`;
-  b.addEventListener('click', () => toggleCell(i));
+  if (i === CONTROL) {
+    b.classList.add('control');
+    b.addEventListener('click', () => setGazePaused(!gazePaused));
+  } else {
+    b.setAttribute('aria-pressed', 'false');
+    b.innerHTML = `<span class="label">${i + 1}</span><span class="check" aria-hidden="true">✓</span>`;
+    b.addEventListener('click', () => toggleCell(i));
+  }
   b.addEventListener('animationend', () => b.classList.remove('pulse'));
   gridEl.append(b);
   cells.push(b);
 }
+
+// ── start/stop control (first cell) ─────────────────────────────────
+const ICON_STOP = `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10.5" fill="none" stroke="currentColor" stroke-width="1.6"/><rect x="8" y="8" width="8" height="8" rx="1.6" fill="currentColor"/></svg>`;
+const ICON_PLAY = `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M10 7.9 16.4 12 10 16.1Z" fill="currentColor" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>`;
+let gazePaused = false;
+
+function renderControl(): void {
+  const c = cells[CONTROL]!;
+  c.classList.toggle('running', !gazePaused);
+  c.classList.toggle('paused', gazePaused);
+  c.innerHTML = gazePaused
+    ? `${ICON_PLAY}<span class="cap">Resume</span>`
+    : `${ICON_STOP}<span class="cap">Pause</span>`;
+  c.setAttribute('aria-label', gazePaused ? 'Resume gaze selection' : 'Pause gaze selection');
+}
+
+/** Paused: gaze selection is bypassed; only the control cell stays active. */
+function setGazePaused(paused: boolean): void {
+  gazePaused = paused;
+  cells.forEach((c, i) => {
+    if (i === CONTROL) return;
+    c.disabled = paused;                 // also blocks mouse clicks
+    c.classList.toggle('inactive', paused);
+  });
+  selector.setOnly(paused ? CONTROL : null);
+  renderControl();
+  lastEl.textContent = paused
+    ? `Gaze selection paused — look at cell ${CONTROL + 1} to resume`
+    : 'Gaze selection resumed';
+}
+renderControl();
 
 function toggleCell(i: number): void {
   const cell = cells[i]!;
@@ -203,7 +240,9 @@ function updateFsButton(): void {
 }
 
 setInterval(() => {   // sample-rate readout
-  if (tracker && !calRunning) setStatus(`Tracker · ${sampleCount} Hz`, sampleCount > 0);
+  if (tracker && !calRunning) {
+    setStatus(`Tracker · ${sampleCount} Hz${gazePaused ? ' · paused' : ''}`, sampleCount > 0 && !gazePaused);
+  }
   sampleCount = 0;
 }, 1000);
 
