@@ -8,7 +8,14 @@
 // (x right, y up). Besides numbers they accept anchor expressions:
 //   cx: "l", "c", "r"  (+/- offset)     cy: "t", "c", "b"  (+/- offset)
 //   e.g. cy: "b - 10" = 10 mm below the bottom edge of the screen.
-// tilt: degrees, 0 = flush, negative = top tilted toward the user.
+// tilt: degrees, 0 = flush, positive = top edge tilted AWAY from the user,
+//       negative = toward the user (same direction as the tobiifree demo's tilt slider).
+// z_mm: Z of the screen plane in tracker space (+Z points toward the user).
+//
+// Note: the demo's own sliders use another parametrisation (cx = screen centre x,
+// cy = screen bottom edge y, both relative to the tracker; tilt in mm), so their
+// signs are the reverse of cx/cy here.
+
 
 import type { DisplayArea } from './sdk';
 
@@ -78,7 +85,12 @@ export function cornersFromConfig(c: AreaConfig): DisplayArea {
   const oy = -c.cy - c.h_mm / 2;     // bottom-left y in tracker space
   const a = (c.tilt * Math.PI) / 180;
   const tlY = oy + c.h_mm * Math.cos(a);
-  const tlZ = c.z_mm + c.h_mm * Math.sin(a);
+  const tlZ = c.z_mm - c.h_mm * Math.sin(a);
+  // +Z points toward the user, so a top edge tilted away has a SMALLER z.
+  // (Matches the demo: tl.z = bl.z - tilt. tobiifreed's tracker.zig uses "+ h*sin"
+  // although its comment says positive = away - the two disagree upstream.)
+
+
   return {
     tl: { x: ox, y: tlY, z: tlZ },
     tr: { x: ox + c.w_mm, y: tlY, z: tlZ },
@@ -91,7 +103,7 @@ export function configFromCorners(a: DisplayArea): AreaConfig {
   const r = (v: number) => Math.round(v * 10) / 10;
   const w = Math.abs(a.tr.x - a.tl.x);
   const dy = a.tl.y - a.bl.y;
-  const dz = a.tl.z - a.bl.z;
+  const dz = a.bl.z - a.tl.z;    // > 0 when the top edge is farther from the user
   const h = Math.hypot(dy, dz);
   return {
     w_mm: r(w), h_mm: r(h), z_mm: r(a.bl.z), tilt: r((Math.atan2(dz, dy) * 180) / Math.PI),

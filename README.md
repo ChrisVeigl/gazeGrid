@@ -48,6 +48,9 @@ same format as tobiifreed's `tobii.json`:
   `cx`: `l` / `c` / `r`, `cy`: `t` / `c` / `b`, each with `+/- offset`; e.g. `"cy": "b - 10"` = 10 mm below the bottom edge.
   Omitted `cx` = 0, omitted `cy` = `"b - 10"` (tracker centred under the screen).
 - `z_mm` – plane depth; `tilt` – degrees (0 = flush, negative = top toward the user).
+- `z_mm` – plane depth; `tilt` – degrees (0 = flush, positive = top edge tilted away from the user, negative = toward the user; same direction as the tobiifree demo's tilt slider). +Z points toward the user, so a positive `z_mm` means the screen surface is that far in front of the tracker (tracker behind the screen plane), a negative `z_mm` means the tracker stands in front of the screen.
+
+**Note** the different interpretation from the demo's sliders:** the demo's `cx` is the screen centre x and `cy` the screen's bottom edge y, both relative to the tracker, so `cx_json = -cx_demo` and `cy_json = -cy_demo - h/2`; the demo's tilt is a z offset in mm (`sin(tilt) = tilt_mm / h`). The dialog's "Read from device" does this conversion for you.
 
 The dialog can fill `w_mm`/`h_mm` from the screen diagonal, load/download a `tobii.json`, and read the
 current values back from the device. The area is saved in localStorage and written to the device on
