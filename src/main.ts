@@ -309,16 +309,35 @@ async function connect(device?: USBDevice): Promise<void> {
   clearError();
   connectBtn.disabled = true;
   connectBtn.textContent = 'Connecting…';
+  let leftFullscreen = false;
   try {
-    const dev = device ?? await pickDevice();
+    let dev: USBDevice | null = device ?? null;
+    if (!dev) {
+      // Once permission was granted, no chooser is needed at all.
+      try { dev = await findGrantedDevice(); } catch { /* fall through to the chooser */ }
+    }
+    if (!dev) {
+      // Chrome's WebUSB chooser is a bubble anchored to the address bar, which is
+      // hidden in fullscreen: opening it there can fail or leave the browser UI in
+      // a state that swallows clicks. So leave fullscreen first.
+      if (document.fullscreenElement) {
+        leftFullscreen = true;
+        await document.exitFullscreen();
+        await new Promise((r) => setTimeout(r, 200));   // let the window settle
+      }
+      dev = await pickDevice();
+    }
     const { src, notice } = await connectDevice(dev, areaCorners, areaSig(areaCorners));
-    if (notice) showWarn(notice);
     tracker = src;
     usbDevice = dev;
     src.subscribeToGaze(onSample);
     setStatus('Tracker · waiting for data…', false);
+    if (notice) showWarn(notice);
+    else if (leftFullscreen) showWarn('Left fullscreen to open the device chooser — press Fullscreen to go back.');
   } catch (e) {
-    if (!(e instanceof DOMException && e.name === 'NotFoundError')) {   // chooser dismissed = no error
+    if (e instanceof DOMException && e.name === 'NotFoundError') {
+      showWarn('No tracker selected (the chooser was closed, or no Tobii device was found).');
+    } else {
       showError(`Connect failed: ${e instanceof Error ? e.message : String(e)}`);
     }
   } finally {
@@ -477,7 +496,9 @@ $('area-apply').addEventListener('click', async () => {
 // ── fullscreen & calibration ────────────────────────────────────────
 fsBtn.addEventListener('click', () => {
   if (document.fullscreenElement) void document.exitFullscreen();
-  else void document.documentElement.requestFullscreen().catch((e) => showError(`Fullscreen failed: ${e}`));
+  else void document.documentElement.requestFullscreen().catch((e) => showError(
+    `The browser refused fullscreen (${e instanceof Error ? `${e.name}: ${e.message}` : String(e)}). ` +
+    'Close any open browser popup or chooser, click inside the page and try again, or use F11.'));
 });
 window.addEventListener('keydown', (e) => {
   const typing = e.target instanceof HTMLElement && e.target.closest('input, textarea, select, dialog');

@@ -29,6 +29,7 @@ program that holds the tracker.
 
 Without a tracker the mouse pointer simulates gaze, so you can try the dwell logic first.
 
+
 ## Display area (screen size + tracker position)
 
 Browsers cannot read the physical screen size, so it is entered in the **Display…** dialog, in the
@@ -57,6 +58,15 @@ the area, recalibrate.
 - `src/displayArea.ts` – tobii.json parsing (incl. anchor expressions), rect+tilt -> corners, diagonal helper
 - `src/tracker.ts` – WebUSB connect, display-area restore, calibration blob persistence
 - `src/sdk/` – copy of tobiifree's `sdk/src` (without the Node-only files), wasm already embedded
+
+## Troubleshooting connection/fullscreen issues
+
+- **Connect while in fullscreen:** Chrome's WebUSB device chooser is anchored to the address bar, which is hidden in
+  fullscreen, and opening it there can leave the browser UI in a state that swallows clicks. The app therefore leaves
+  fullscreen before opening the chooser (and tells you to press Fullscreen again afterwards). Once the tracker has been
+  granted on an origin, no chooser is needed any more and Connect works directly, also in fullscreen.
+- **"The browser refused fullscreen":** Chrome rejected the request (no user activation, or some browser popup/chooser is
+  open). Close the popup, click inside the page and try again, or use F11.
 
 ## License
 
