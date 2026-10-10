@@ -1,6 +1,6 @@
 # Gaze Grid
 
-A 5 x 4 grid of cells that you select with your eyes, using a Tobii Eye Tracker 5 through
+A grid of cells (5 x 4 by default, 1-10 rows and columns selectable) that you select with your eyes, using a Tobii Eye Tracker 5 through
 [tobiifree](https://github.com/Aetherall/tobiifree) (WebUSB + wasm TTP core, no native driver).
 
 ## Run
@@ -24,7 +24,8 @@ program that holds the tracker.
    Space/Enter. Esc cancels. The calibration blob is stored in localStorage and re-applied on connect.
 5. Look at a cell: it grows slightly and glows more and more while you dwell; at the end a ripple plays and it is toggled (selected / deselected).
    Look away and back to trigger it again.
-   **Cell 1 is a pause/resume control** (red stop icon while running, green play icon while paused). While paused, gaze selection is bypassed: the other cells are dimmed and disabled, and only cell 1 reacts, so you can resume by looking at it. **Clear** resets all cells. The dwell slider sets 300-2500 ms.
+   **Cell 1 is a pause/resume control** (red stop icon while running, green play icon while paused). While paused, gaze selection is bypassed: the other cells are dimmed and disabled, and only cell 1 reacts, so you can resume by looking at it. **Clear** resets all cells. The dwell slider sets 20-2500 ms (very short values trigger almost instantly; use with care).
+   The **Grid** boxes change the number of columns and rows (1-10 each); the choice is remembered, and changing it clears the current selection.
 
 Without a tracker the mouse pointer simulates gaze, so you can try the dwell logic first.
 

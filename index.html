@@ -12,8 +12,12 @@
       <span id="status" class="pill">Mouse simulation</span>
       <span id="last" class="last">Nothing selected</span>
       <span class="spacer"></span>
+      <label class="ctl">Grid
+        <select id="cols" aria-label="Columns"></select> ×
+        <select id="rows" aria-label="Rows"></select>
+      </label>
       <label class="ctl">Dwell
-        <input id="dwell" type="range" min="300" max="2500" step="50" />
+        <input id="dwell" type="range" min="20" max="2500" step="10" />
         <output id="dwell-val"></output>
       </label>
       <label class="ctl"><input id="show-gaze" type="checkbox" checked /> Gaze dot</label>

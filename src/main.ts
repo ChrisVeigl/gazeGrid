@@ -11,12 +11,17 @@ import {
   areaSig, configFromCorners, describeConfig, parseAreaText, sizeFromDiagonal,
 } from './displayArea';
 
-const COLS = 5;
-const ROWS = 4;
+const DEFAULT_COLS = 5;
+const DEFAULT_ROWS = 4;
+const MAX_DIM = 10;
 const STALE_MS = 250;     // tracker silent this long -> treat gaze as lost
 const SACCADE_PX = 150;   // bigger jumps bypass smoothing so the dot isn't laggy
 const CONTROL = 0;         // index of the start/stop cell (first cell)
 const KEY_DWELL = 'gazegrid_dwell_ms';
+const KEY_COLS = 'gazegrid_cols';
+const KEY_ROWS = 'gazegrid_rows';
+const MIN_DWELL = 20;
+const MAX_DWELL = 2500;
 const KEY_AREA_TEXT = 'gazegrid_display_area';
 
 const $ = <T extends HTMLElement>(id: string): T => {
@@ -37,6 +42,8 @@ const dwellInput = $<HTMLInputElement>('dwell');
 const dwellVal = $('dwell-val');
 const showGaze = $<HTMLInputElement>('show-gaze');
 const calPts = $<HTMLSelectElement>('cal-pts');
+const colsSel = $<HTMLSelectElement>('cols');
+const rowsSel = $<HTMLSelectElement>('rows');
 
 const areaDlg = $<HTMLDialogElement>('area-dlg');
 
@@ -49,23 +56,20 @@ let areaCorners: DisplayArea | null = null;   // user-configured; null = keep th
 }
 
 // ── grid ────────────────────────────────────────────────────────────
-const cells: HTMLButtonElement[] = [];
-for (let i = 0; i < COLS * ROWS; i++) {
-  const b = document.createElement('button');
-  b.type = 'button';
-  b.className = 'cell';
-  if (i === CONTROL) {
-    b.classList.add('control');
-    b.addEventListener('click', () => setGazePaused(!gazePaused));
-  } else {
-    b.setAttribute('aria-pressed', 'false');
-    b.innerHTML = `<span class="label">${i + 1}</span><span class="check" aria-hidden="true">✓</span>`;
-    b.addEventListener('click', () => toggleCell(i));
-  }
-  b.addEventListener('animationend', () => b.classList.remove('pulse'));
-  gridEl.append(b);
-  cells.push(b);
+const readDim = (key: string, def: number): number => {
+  const n = Number(localStorage.getItem(key));
+  return Number.isInteger(n) && n >= 1 && n <= MAX_DIM ? n : def;
+};
+let cols = readDim(KEY_COLS, DEFAULT_COLS);
+let rows = readDim(KEY_ROWS, DEFAULT_ROWS);
+
+for (const sel of [colsSel, rowsSel]) {
+  for (let n = 1; n <= MAX_DIM; n++) sel.add(new Option(String(n), String(n)));
 }
+colsSel.value = String(cols);
+rowsSel.value = String(rows);
+
+const cells: HTMLButtonElement[] = [];   // mutated in place by buildGrid()
 
 // ── start/stop control (first cell) ─────────────────────────────────
 const ICON_STOP = `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10.5" fill="none" stroke="currentColor" stroke-width="1.6"/><rect x="8" y="8" width="8" height="8" rx="1.6" fill="currentColor"/></svg>`;
@@ -73,7 +77,8 @@ const ICON_PLAY = `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circ
 let gazePaused = false;
 
 function renderControl(): void {
-  const c = cells[CONTROL]!;
+  const c = cells[CONTROL];
+  if (!c) return;
   c.classList.toggle('running', !gazePaused);
   c.classList.toggle('paused', gazePaused);
   c.innerHTML = gazePaused
@@ -83,28 +88,86 @@ function renderControl(): void {
 }
 
 /** Paused: gaze selection is bypassed; only the control cell stays active. */
-function setGazePaused(paused: boolean): void {
-  gazePaused = paused;
+function applyPaused(): void {
   cells.forEach((c, i) => {
     if (i === CONTROL) return;
-    c.disabled = paused;                 // also blocks mouse clicks
-    c.classList.toggle('inactive', paused);
+    c.disabled = gazePaused;             // also blocks mouse clicks
+    c.classList.toggle('inactive', gazePaused);
   });
-  selector.setOnly(paused ? CONTROL : null);
+  selector.setOnly(gazePaused ? CONTROL : null);
   renderControl();
+}
+
+function setGazePaused(paused: boolean): void {
+  gazePaused = paused;
+  applyPaused();
   lastEl.textContent = paused
     ? `Gaze selection paused — look at cell ${CONTROL + 1} to resume`
     : 'Gaze selection resumed';
 }
-renderControl();
+
+// ── dwell selector ──────────────────────────────────────────────────
+const selector = new DwellSelector(cells, (i) => {
+  cells[i]!.classList.add('pulse');
+  cells[i]!.click();          // same code path as a mouse click
+});
+
+function relayout(): void {
+  selector.refresh();
+  const r = cells[0]?.getBoundingClientRect();
+  if (!r) return;
+  const m = Math.round(Math.min(r.width, r.height));
+  if (gridEl.style.getPropertyValue('--cell-min') !== `${m}px`) gridEl.style.setProperty('--cell-min', `${m}px`);
+  gridEl.classList.toggle('compact', m < 80);
+  // hit margins shrink with small cells
+  selector.cfg.insetPx = Math.min(8, m * 0.1);
+  selector.cfg.stickyPx = Math.min(24, m * 0.3);
+}
+
+function buildGrid(): void {
+  gridEl.replaceChildren();
+  cells.length = 0;
+  gridEl.style.setProperty('--cols', String(cols));
+  gridEl.style.setProperty('--rows', String(rows));
+  gridEl.style.setProperty('--gap', cols > 7 || rows > 7 ? '8px' : '14px');
+  for (let i = 0; i < cols * rows; i++) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'cell';
+    if (i === CONTROL) {
+      b.classList.add('control');
+      b.addEventListener('click', () => setGazePaused(!gazePaused));
+    } else {
+      b.setAttribute('aria-pressed', 'false');
+      b.innerHTML = `<span class="label">${i + 1}</span><span class="check" aria-hidden="true">✓</span>`;
+      b.addEventListener('click', () => toggleCell(i));
+    }
+    b.addEventListener('animationend', () => b.classList.remove('pulse'));
+    gridEl.append(b);
+    cells.push(b);
+  }
+  selector.syncCells();
+  applyPaused();          // keeps a paused state across grid changes
+  relayout();
+  lastEl.textContent = 'Nothing selected';
+}
+
+function onGridSizeChange(): void {
+  cols = Number(colsSel.value);
+  rows = Number(rowsSel.value);
+  try { localStorage.setItem(KEY_COLS, String(cols)); localStorage.setItem(KEY_ROWS, String(rows)); } catch { /* ignore */ }
+  buildGrid();
+}
+colsSel.addEventListener('change', onGridSizeChange);
+rowsSel.addEventListener('change', onGridSizeChange);
 
 function toggleCell(i: number): void {
   const cell = cells[i]!;
   const on = !cell.classList.contains('selected');
   cell.classList.toggle('selected', on);
   cell.setAttribute('aria-pressed', String(on));
-  const row = Math.floor(i / COLS) + 1;
-  const col = (i % COLS) + 1;
+  const row = Math.floor(i / cols) + 1;
+  const col = (i % cols) + 1;
   const count = cells.filter((c) => c.classList.contains('selected')).length;
   lastEl.textContent = `${on ? 'Selected' : 'Deselected'} ${i + 1} (row ${row}, col ${col}) · ${count} selected`;
 }
@@ -114,18 +177,12 @@ clearBtn.addEventListener('click', () => {
   lastEl.textContent = 'Nothing selected';
 });
 
-// ── dwell selector ──────────────────────────────────────────────────
-const selector = new DwellSelector(cells, (i) => {
-  cells[i]!.classList.add('pulse');
-  cells[i]!.click();          // same code path as a mouse click
-});
-const relayout = () => selector.refresh();
 window.addEventListener('resize', relayout);
 document.addEventListener('fullscreenchange', () => { relayout(); setTimeout(relayout, 150); updateFsButton(); });
 new ResizeObserver(relayout).observe(gridEl);
 
 const savedDwell = Number(localStorage.getItem(KEY_DWELL));
-dwellInput.value = String(savedDwell >= 300 && savedDwell <= 2500 ? savedDwell : 900);
+dwellInput.value = String(savedDwell >= MIN_DWELL && savedDwell <= MAX_DWELL ? savedDwell : 900);
 const applyDwell = () => {
   selector.cfg.dwellMs = Number(dwellInput.value);
   dwellVal.textContent = `${dwellInput.value} ms`;
@@ -133,6 +190,7 @@ const applyDwell = () => {
 };
 dwellInput.addEventListener('input', applyDwell);
 applyDwell();
+buildGrid();
 
 // ── gaze input ──────────────────────────────────────────────────────
 let tracker: Source | null = null;

@@ -19,6 +19,7 @@ body {
 .spacer { flex: 1; }
 .ctl { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); }
 .ctl output { min-width: 4.5ch; color: var(--text); font-variant-numeric: tabular-nums; }
+select { padding: 6px 8px; }
 button, select {
   font: inherit; color: var(--text); background: #272b3b;
   border: 1px solid var(--border); border-radius: 6px; padding: 6px 12px; cursor: pointer;
@@ -62,16 +63,21 @@ dialog textarea {
 
 /* ── 5 x 4 grid ── */
 #grid {
-  flex: 1; min-height: 0; padding: 14px; gap: 14px;
-  display: grid; grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(4, 1fr);
+  --cols: 5; --rows: 4; --gap: 14px;
+  flex: 1; min-height: 0; padding: var(--gap); gap: var(--gap);
+  display: grid;
+  grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+  grid-template-rows: repeat(var(--rows), minmax(0, 1fr));
 }
 .cell {
   --ac: 74 144 226;          /* accent as r g b, so alpha can follow --glow */
   --glow: 0;                 /* 0..1, animated from JS (see dwell.ts) */
   position: relative; padding: 0;
   display: flex; align-items: center; justify-content: center;
-  background: var(--cell); border: 2px solid var(--border); border-radius: 16px;
-  font-size: clamp(28px, 6vmin, 72px); font-weight: 600; color: var(--text);
+  background: var(--cell); border: 2px solid var(--border);
+  border-radius: clamp(6px, calc(var(--cell-min, 160px) * .1), 16px);
+  font-size: clamp(12px, calc(var(--cell-min, 160px) * .38), 72px); font-weight: 600; color: var(--text);
+  min-width: 0; min-height: 0;
   transform: scale(calc(1 + 0.045 * var(--glow)));
   box-shadow:
     0 0 calc(34px * var(--glow)) calc(2px * var(--glow)) rgb(var(--ac) / calc(0.55 * var(--glow))),
@@ -101,8 +107,9 @@ dialog textarea {
 .cell.inactive { opacity: .28; filter: grayscale(.7); }
 
 /* start/stop control: red + stop icon while running, green + play icon while paused */
-.cell.control { flex-direction: column; gap: .2em; font-size: clamp(14px, 2.4vmin, 28px); }
-.cell.control .ico { position: relative; width: clamp(44px, 11vmin, 110px); height: auto; color: rgb(var(--ac)); }
+.cell.control { flex-direction: column; gap: .2em; font-size: clamp(9px, calc(var(--cell-min, 160px) * .13), 28px); }
+#grid.compact .cell.control .cap { display: none; }
+.cell.control .ico { position: relative; width: clamp(16px, calc(var(--cell-min, 160px) * .5), 110px); height: auto; color: rgb(var(--ac)); }
 .cell.control .cap {
   position: relative; font-size: .62em; font-weight: 700; letter-spacing: .14em;
   text-transform: uppercase; color: rgb(var(--ac));
@@ -112,7 +119,7 @@ dialog textarea {
 .cell.pulse::after { animation: ripple .65s cubic-bezier(.2,.7,.3,1); }
 @keyframes ripple {
   from { inset: -2px;  opacity: .85; }
-  to   { inset: -14px; opacity: 0; }
+  to   { inset: calc(var(--gap, 14px) * -.9); opacity: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
   .cell { transform: none; }

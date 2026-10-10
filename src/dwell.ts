@@ -68,6 +68,14 @@ export class DwellSelector {
 
   get current(): number { return this.cur; }
 
+  /** Call after the `cells` array was changed in place (grid rebuilt). */
+  syncCells(): void {
+    this.cur = -1;
+    this.fired = false;
+    this.glow = this.cells.map(() => 0);
+    this.refresh();
+  }
+
   /** Restrict targeting to a single cell (null = all cells active). */
   setOnly(index: number | null): void {
     this.only = index;
