@@ -3,7 +3,11 @@
 A grid of cells (5 x 4 by default, 1-10 rows and columns selectable) that you select with your eyes, using a Tobii Eye Tracker 5 through
 [tobiifree](https://github.com/Aetherall/tobiifree) (WebUSB + wasm TTP core, no native driver).
 
-## Run
+## Online demo
+
+A live demo is available at [github.io](https://chrisveigl.github.io/gazeGrid)
+
+## Run locally
 
 ```sh
 npm install
